@@ -209,9 +209,69 @@ export class TmuxManager {
   }
 
   /**
-   * Check if command is complete by looking for shell prompt
+   * Get the process ID of the shell running in the CT Pane
    */
-  isCommandComplete(output) {
+  async getShellPid() {
+    if (!this.ctPane) {
+      throw new Error('No Claude Terminal pane available');
+    }
+    
+    const target = `${this.currentSession}:${this.currentWindow}.${this.ctPane}`;
+    
+    try {
+      const { stdout } = await execAsync(`tmux display-message -t ${target} -p '#{pane_pid}'`);
+      return parseInt(stdout.trim());
+    } catch (error) {
+      throw new Error(`Failed to get shell PID: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get child processes of a given PID
+   */
+  async getChildProcesses(parentPid) {
+    try {
+      const { stdout } = await execAsync(`pgrep -P ${parentPid} 2>/dev/null || true`);
+      return stdout.trim() ? stdout.trim().split('\n').map(pid => parseInt(pid)) : [];
+    } catch (error) {
+      // pgrep returns non-zero when no processes found, which is normal
+      return [];
+    }
+  }
+
+  /**
+   * Check if pane is idle (no child processes running)
+   */
+  async isPaneIdle() {
+    if (!this.ctPane) {
+      throw new Error('No Claude Terminal pane available');
+    }
+    
+    try {
+      const shellPid = await this.getShellPid();
+      const childProcesses = await this.getChildProcesses(shellPid);
+      
+      // Pane is idle if shell has no child processes
+      return childProcesses.length === 0;
+    } catch (error) {
+      // If we can't determine, fall back to false (assume busy)
+      console.error('Error checking pane idle state:', error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Check if command is complete using process monitoring (preferred method)
+   */
+  async isCommandCompleteByProcess() {
+    return await this.isPaneIdle();
+  }
+
+  /**
+   * Legacy: Check if command is complete by looking for shell prompt patterns
+   * Kept as fallback method for compatibility
+   */
+  isCommandCompleteByOutput(output) {
     const lines = output.split('\n');
     if (lines.length === 0) return false;
     
@@ -224,9 +284,32 @@ export class TmuxManager {
       />\s*$/,      // Windows prompt ending with >
       /%\s*$/,      // Some shell prompts ending with %
       /❯\s*$/,      // Modern shell prompts (starship, etc.)
+      /➜.*$/,       // Oh-my-zsh style prompts starting with ➜
+      /.*git:\([^)]+\)\s*$/,  // Git branch prompts ending with git:(branch)
     ];
     
     return promptPatterns.some(pattern => pattern.test(lastLine));
+  }
+
+  /**
+   * Primary command completion detection using process monitoring
+   */
+  async isCommandComplete() {
+    try {
+      // Try process-based detection first (more reliable)
+      return await this.isCommandCompleteByProcess();
+    } catch (error) {
+      console.error('Process-based detection failed, using output fallback:', error.message);
+      
+      // Fall back to output-based detection if process monitoring fails
+      try {
+        const output = await this.capturePane();
+        return this.isCommandCompleteByOutput(output);
+      } catch (fallbackError) {
+        console.error('Both detection methods failed:', fallbackError.message);
+        return false;
+      }
+    }
   }
 
   /**

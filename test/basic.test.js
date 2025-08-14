@@ -17,14 +17,15 @@ test('TmuxManager - cleanOutput removes ANSI sequences', () => {
   assert.equal(tmux.cleanOutput(input), expected);
 });
 
-test('TmuxManager - isCommandComplete detects shell prompts', () => {
+test('TmuxManager - isCommandCompleteByOutput detects shell prompts', () => {
   const tmux = new TmuxManager();
   
-  assert.equal(tmux.isCommandComplete('user@host:~$ '), true);
-  assert.equal(tmux.isCommandComplete('root@host:/# '), true);
-  assert.equal(tmux.isCommandComplete('user@host project % '), true);
-  assert.equal(tmux.isCommandComplete('running command...'), false);
-  assert.equal(tmux.isCommandComplete(''), false);
+  assert.equal(tmux.isCommandCompleteByOutput('user@host:~$ '), true);
+  assert.equal(tmux.isCommandCompleteByOutput('root@host:/# '), true);
+  assert.equal(tmux.isCommandCompleteByOutput('user@host project % '), true);
+  assert.equal(tmux.isCommandCompleteByOutput('➜  tmux-claude-bridge git:(master)'), true);
+  assert.equal(tmux.isCommandCompleteByOutput('running command...'), false);
+  assert.equal(tmux.isCommandCompleteByOutput(''), false);
 });
 
 test('TmuxManager - detectInteractivePrompts identifies prompts', () => {

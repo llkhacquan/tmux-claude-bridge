@@ -149,13 +149,15 @@ class TmuxTerminalMCP {
 
       console.error(`📍 Detected tmux session: ${env.session} (window ${env.window}, pane ${env.pane})`);
 
-      // Discover or create Claude Terminal
+      // Discover Claude Terminal and auto-configure if found
       const discovery = await this.tmux.discoverClaudeTerminal();
       
       if (discovery.found) {
         console.error(discovery.message);
+        // Sync directory to CT Pane
+        await this.tmux.syncDirectory();
         if (discovery.assumed) {
-          console.error('💡 Tip: You can create a dedicated CT Pane with create_claude_terminal tool');
+          console.error('💡 Tip: You can create a dedicated CT Pane with create_claude_terminal tool for better separation');
         }
       } else {
         console.error(discovery.message);
@@ -269,7 +271,7 @@ class TmuxTerminalMCP {
       try {
         const output = await this.tmux.capturePane();
         
-        if (this.tmux.isCommandComplete(output)) {
+        if (await this.tmux.isCommandComplete()) {
           const duration = ((Date.now() - startTime) / 1000).toFixed(1);
           return `✅ ${command} completed in ${duration}s:\n\n${output}`;
         }
@@ -309,7 +311,7 @@ class TmuxTerminalMCP {
       try {
         const output = await this.tmux.capturePane();
         
-        if (this.tmux.isCommandComplete(output)) {
+        if (await this.tmux.isCommandComplete()) {
           const commandInfo = this.activeCommands.get(commandId);
           if (commandInfo) {
             const duration = ((Date.now() - commandInfo.startTime) / 1000).toFixed(1);
