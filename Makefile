@@ -86,7 +86,7 @@ test-integration: build ## Run integration tests
 		exit 1; \
 	fi
 	@chmod +x ./scripts/integration-test.sh
-	./scripts/integration-test.sh
+	./scripts/integration-test.sh --skip-build
 	@echo "$(GREEN)✓ Integration tests completed$(NC)"
 
 # Code quality targets

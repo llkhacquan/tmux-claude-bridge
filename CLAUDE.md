@@ -103,6 +103,57 @@ The MCP recognizes common long-running commands:
 - `pytest`, `npm test`
 - Custom patterns configurable by user
 
+### Interactive Command Handling
+
+The MCP handles interactive commands by delegating user input while maintaining security and simplicity:
+
+#### **Sudo Password Prompts**
+```
+User: "run sudo apt update"
+Claude: [sends command, detects password prompt]
+Claude: "🔐 Sudo password required in CT Pane"
+Claude: "Please switch to pane 2 and enter your password"
+Claude: [automatically executes: tmux select-pane -t 2]
+```
+
+#### **Focus Management Strategy**
+- **Auto-Focus Switch**: Automatically moves tmux cursor to CT Pane when interaction needed
+- **User Direct Input**: User types sensitive information directly in the focused pane
+- **No Interception**: Claude never sees or handles passwords or sensitive input
+- **Seamless Return**: User can switch back to Claude pane after completing interaction
+
+#### **Interactive Scenarios**
+
+**Text Editors**
+```
+User: "run git commit"
+Claude: "📝 Git editor opened in CT Pane"  
+Claude: [executes: tmux select-pane -t 2]
+Claude: "Complete your commit message, then switch back to continue"
+```
+
+**Confirmation Prompts**
+```
+User: "run npm audit fix"
+Claude: "❓ Confirmation prompt detected in CT Pane"
+Claude: [executes: tmux select-pane -t 2] 
+Claude: "Please respond to the Y/n prompt, then return here"
+```
+
+**Interactive Tools**
+```
+User: "run htop"
+Claude: "🔧 Interactive tool 'htop' launched in CT Pane"
+Claude: [executes: tmux select-pane -t 2]
+Claude: "CT Pane control released. Exit htop to resume normal operation"
+```
+
+#### **Security Benefits**
+- **Zero Password Exposure**: Claude never accesses or processes sensitive input
+- **Direct User Control**: User maintains complete control over authentication
+- **Clean Separation**: Clear boundary between automated and interactive operations
+- **Audit Trail**: All sensitive operations happen in user-controlled terminal space
+
 ### Session Intelligence
 
 - **Layout Monitoring**: Detects when panes are added, removed, or resized
