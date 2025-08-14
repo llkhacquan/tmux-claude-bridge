@@ -1,0 +1,44 @@
+{
+  "name": "tmux-terminal-mcp",
+  "version": "1.0.0",
+  "description": "Pure Node.js MCP server for intelligent tmux terminal management with Claude Terminal (CT Pane) support",
+  "main": "mcp-server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node mcp-server.js",
+    "dev": "node --inspect mcp-server.js",
+    "test": "node --test test/*.test.js",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "mcp",
+    "tmux",
+    "terminal",
+    "claude",
+    "automation"
+  ],
+  "author": "Claude Code",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "."
+  },
+  "mcp": {
+    "server": {
+      "command": "node",
+      "args": ["mcp-server.js"]
+    }
+  }
+}

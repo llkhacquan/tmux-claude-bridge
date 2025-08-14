@@ -1,311 +1,234 @@
-# tmux-claude-bridge
+# Tmux Terminal MCP
 
-A WebSocket-based bridge that allows Claude AI to execute commands in a tmux terminal pane and receive real-time output. This enables seamless integration between Claude's AI capabilities and your local development environment.
+A pure Node.js MCP (Model Context Protocol) server that provides intelligent tmux terminal management for Claude Code. Features the innovative **Claude Terminal (CT Pane)** concept with "Fire and Wait Briefly" execution strategy.
 
-## Features
+## 🎯 Core Concept: Claude Terminal (CT Pane)
 
-- **Real-time Command Execution**: Send commands from Claude to a specific tmux pane
-- **Live Output Capture**: Stream command output back to Claude as it happens
-- **Command Completion Detection**: Automatically detects when commands finish executing
-- **Multiple Client Support**: Multiple WebSocket clients can connect simultaneously
-- **Robust Error Handling**: Comprehensive error handling and timeout management
-- **Configurable**: Environment variables and config file support
-- **Health Monitoring**: Built-in health check endpoint
-- **Clean Output**: ANSI escape sequence removal and output formatting
+The **Claude Terminal** is a dedicated tmux pane for Claude's command execution, providing clean separation between your interactive work and Claude's automated tasks. This prevents command interference and gives you full control over both environments.
 
-## Architecture
+## ✨ Key Features
+
+### 🧠 Intelligent Startup Behavior
+- Auto-detects tmux environment and current session
+- Scans window layout to find suitable Claude Terminal pane
+- Smart CT Pane discovery with helpful suggestions
+- Automatic directory synchronization
+
+### ⚡ "Fire and Wait Briefly" Execution Strategy
+```
+1. Send command to CT Pane via tmux send-keys
+2. Wait up to 5 seconds for quick commands
+3. For long-running commands: Switch to background monitoring
+4. Auto-notify when commands complete
+5. Handle interactive prompts intelligently
+```
+
+### 🎛️ Interactive Command Handling
+- Detects interactive prompts (sudo passwords, confirmations, editors)
+- Auto-switches focus to CT Pane when user interaction needed
+- Never intercepts sensitive input - delegates to user safely
+- Handles: sudo prompts, git commit editors, REPLs, monitoring tools
+
+### 🔧 MCP Tools Provided
+
+| Tool | Description |
+|------|-------------|
+| `execute_terminal_command` | Execute commands with intelligent timeout handling |
+| `get_terminal_status` | Show CT Pane and tmux environment status |
+| `create_claude_terminal` | Create new CT Pane if needed |
+| `switch_terminal_focus` | Switch tmux focus to CT Pane |
+| `get_command_status` | Check status of running background commands |
+
+## 🏗️ Architecture
 
 ```
-┌─────────────┐    WebSocket    ┌─────────────────┐    tmux commands    ┌─────────────┐
-│   Claude    │ ────────────── │  Go WebSocket   │ ─────────────────── │    tmux     │
-│     AI      │                │     Server      │                     │    pane     │
-└─────────────┘                └─────────────────┘                     └─────────────┘
+Claude Code <--MCP Protocol--> Node.js MCP Server <--child_process--> tmux commands
 ```
 
-## Prerequisites
+## 🚀 Installation & Setup
 
-- Go 1.21 or later
+### Prerequisites
+- Node.js 18+ 
 - tmux installed and running
-- A tmux session set up with split panes
+- Must run the MCP server from within a tmux session
 
-## Quick Start
+### Install Dependencies
+```bash
+npm install
+```
 
-1. **Clone and build the application:**
+### Configure in Claude Code
+
+Add to your Claude Code MCP configuration (`~/.config/claude-code/mcp_servers.json`):
+
+```json
+{
+  "tmux-terminal": {
+    "command": "node",
+    "args": ["/path/to/tmux-claude-bridge/mcp-server.js"],
+    "cwd": "/path/to/tmux-claude-bridge"
+  }
+}
+```
+
+### Quick Start
+
+1. **Start tmux session:**
    ```bash
-   git clone <repository-url>
-   cd tmux-claude-bridge
-   go mod tidy
-   go build -o tmux-claude-bridge
+   tmux new-session -s claude-work
    ```
 
-2. **Set up your tmux session:**
+2. **Launch Claude Code from within tmux:**
    ```bash
-   # Create a new tmux session with horizontal split
-   tmux new-session -d -s claude-bridge
-   tmux split-window -h -t claude-bridge
+   claude-code
    ```
 
-3. **Start the bridge server:**
-   ```bash
-   ./tmux-claude-bridge
-   ```
+3. **Let Claude detect and set up your terminal:**
+   - Claude will automatically detect your tmux environment
+   - It will suggest creating a Claude Terminal if none exists
+   - The CT Pane will be configured and ready for commands
 
-4. **Test the connection:**
-   Open `http://localhost:8080` in your browser to access the test client, or check health at `http://localhost:8080/health`
+## 🎮 Usage Examples
 
-## Configuration
+### First Time Setup
+```
+Claude: "🔍 Detected tmux session 'claude-work' with 1 pane"
+Claude: "📋 No dedicated Claude Terminal found. Should I create one on the right?"
+User: "yes"  
+Claude: "✅ Created Claude Terminal (CT Pane) in pane 1. Ready for commands!"
+```
+
+### Command Execution Examples
+
+**Quick Commands (≤5 seconds):**
+```
+User: "run ls -la"
+Claude: "✅ ls -la completed in 0.8s:
+total 48
+drwxr-xr-x  12 user  staff   384 Aug 15 00:30 .
+drwxr-xr-x   3 user  staff    96 Aug 14 23:45 ..
+..."
+```
+
+**Long-Running Commands:**
+```
+User: "run npm install"  
+Claude: "🔄 npm install started in Claude Terminal (pane 1)
+
+Long-running command, switching to background monitoring.
+
+Command ID: abc123-def456
+Use get_command_status to check progress."
+
+[Later automatically]
+Claude: "✅ npm install completed in 3m 42s"
+```
+
+**Interactive Commands:**
+```
+User: "run sudo apt update"
+Claude: "🔐 Sudo password required in Claude Terminal (pane 1). Focus switched for password entry."
+```
+
+### Background Command Monitoring
+```
+User: "get command status"
+Claude: "📝 Active Commands (2):
+
+🔹 npm run build
+   ID: abc123-def456
+   Status: running (2m 15s)
+
+🔹 docker build -t myapp .
+   ID: xyz789-uvw012  
+   Status: completed (5m 32s)"
+```
+
+### File Structure
+```
+tmux-terminal-mcp/
+├── package.json          # Dependencies and scripts
+├── mcp-server.js         # Main MCP server implementation  
+├── tmux-manager.js       # Tmux command utilities
+├── command-detector.js   # Long-running command detection
+├── test/                 # Test suite
+└── README.md            # This file
+```
+
+### Key Components
+
+- **TmuxManager**: Handles all tmux operations, CT Pane management, and command execution
+- **CommandDetector**: Analyzes commands to determine execution strategy and special handling
+- **MCP Server**: Implements the MCP protocol and coordinates between Claude and tmux
+
+## 🧪 Testing
+
+Run the test suite:
+```bash
+npm test
+```
+
+Test coverage includes:
+- Output cleaning and ANSI sequence removal
+- Shell prompt detection for command completion
+- Interactive prompt identification
+- Command analysis and categorization
+- Timeout strategy determination
+
+## 🔧 Advanced Configuration
 
 ### Environment Variables
+- `TMUX_SESSION`: Override detected session name
+- `DEBUG`: Enable debug logging
+- `CT_PANE_TITLE`: Custom title for Claude Terminal pane
 
-- `PORT`: Server port (default: 8080)
-- `TMUX_SESSION`: Target tmux session name (default: claude-bridge)
-- `TMUX_PANE`: Target pane number (default: 1)
-- `LOG_LEVEL`: Logging level (default: info)
-- `CONFIG_FILE`: Path to JSON configuration file
+### Command Categories
 
-### Configuration File
+The system recognizes these command categories:
+- **package-manager**: npm, yarn, pip, brew, apt, etc.
+- **build**: make, cmake, cargo, go build, etc.
+- **container**: docker commands
+- **testing**: pytest, jest, npm test, etc.
+- **version-control**: git operations
+- **file-system**: ls, find, cp, mv, etc.
+- **network**: curl, wget, ssh, etc.
+- **system**: ps, top, df, etc.
 
-Create a `config.json` file:
+### Timeout Strategies
+- **quick** (≤5s): `ls`, `pwd`, `git status`
+- **extended** (≤30s): `git pull`, `npm run`, small builds
+- **async** (background): `npm install`, `docker build`, large builds
+- **no-timeout**: Interactive commands requiring user input
 
-```json
-{
-  "port": "8080",
-  "tmux_session": "claude-bridge",
-  "tmux_pane": "1",
-  "log_level": "info"
-}
-```
-
-## WebSocket API
-
-### Message Format
-
-All messages are JSON objects with the following structure:
-
-```json
-{
-  "type": "message_type",
-  "command": "optional_command",
-  "output": "optional_output",
-  "error": "optional_error",
-  "status": "optional_status",
-  "id": "optional_request_id"
-}
-```
-
-### Client → Server Messages
-
-**Execute Command:**
-```json
-{
-  "type": "execute",
-  "command": "ls -la",
-  "id": "unique-request-id"
-}
-```
-
-**Ping:**
-```json
-{
-  "type": "ping",
-  "id": "ping-id"
-}
-```
-
-### Server → Client Messages
-
-**Output (Running):**
-```json
-{
-  "type": "output",
-  "output": "command output...",
-  "status": "running",
-  "id": "request-id"
-}
-```
-
-**Output (Complete):**
-```json
-{
-  "type": "output",
-  "output": "final command output...",
-  "status": "complete",
-  "id": "request-id"
-}
-```
-
-**Error:**
-```json
-{
-  "type": "error",
-  "error": "error message",
-  "id": "request-id"
-}
-```
-
-**Pong:**
-```json
-{
-  "type": "pong",
-  "id": "ping-id"
-}
-```
-
-## Usage Examples
-
-### Basic Command Execution
-
-```javascript
-const ws = new WebSocket('ws://localhost:8080/ws');
-
-ws.onopen = function() {
-    // Execute a command
-    ws.send(JSON.stringify({
-        type: 'execute',
-        command: 'echo "Hello from Claude!"',
-        id: 'cmd-1'
-    }));
-};
-
-ws.onmessage = function(event) {
-    const msg = JSON.parse(event.data);
-    console.log('Received:', msg);
-};
-```
-
-### Long-running Commands
-
-The bridge automatically handles long-running commands and streams output in real-time:
-
-```javascript
-ws.send(JSON.stringify({
-    type: 'execute',
-    command: 'npm install',
-    id: 'install-cmd'
-}));
-```
-
-## Integration with Claude Code
-
-This bridge is designed to work as an MCP (Multi-Context Proxy) server for Claude Code. See `CLAUDE.md` for detailed integration instructions.
-
-## Tmux Session Setup
-
-The application expects a specific tmux session layout:
-
-1. **Session Name**: Default is `claude-bridge` (configurable)
-2. **Pane Layout**: Horizontal split with commands executed in pane 1 (right pane)
-3. **Pane Numbering**: tmux panes are numbered starting from 0
-
-### Manual Setup
-
-```bash
-# Create session
-tmux new-session -d -s claude-bridge
-
-# Split horizontally
-tmux split-window -h -t claude-bridge
-
-# Select the right pane (pane 1)
-tmux select-pane -t claude-bridge:1
-```
-
-### Automated Setup Script
-
-```bash
-#!/bin/bash
-# setup-tmux.sh
-
-SESSION_NAME="claude-bridge"
-
-# Check if session exists
-if tmux has-session -t $SESSION_NAME 2>/dev/null; then
-    echo "Session $SESSION_NAME already exists"
-    tmux attach-session -t $SESSION_NAME
-else
-    echo "Creating new tmux session: $SESSION_NAME"
-    tmux new-session -d -s $SESSION_NAME
-    tmux split-window -h -t $SESSION_NAME
-    tmux select-pane -t $SESSION_NAME:0
-    tmux attach-session -t $SESSION_NAME
-fi
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **"tmux session not found" error:**
-   - Ensure tmux is running
-   - Verify the session name matches your configuration
-   - Check that the session has been created
-
-2. **Commands not executing:**
-   - Verify the pane number is correct
-   - Ensure the target pane is not running another interactive program
-   - Check tmux permissions
-
-3. **Output not captured:**
-   - The pane might be in copy mode
-   - Check if there are blocking prompts in the terminal
-
-### Debug Mode
-
-Run with debug logging:
-
-```bash
-LOG_LEVEL=debug ./tmux-claude-bridge
-```
-
-### Health Check
-
-Check if the service is running and tmux session is accessible:
-
-```bash
-curl http://localhost:8080/health
-```
-
-## Security Considerations
-
-- **Local Access Only**: The WebSocket server should only be accessible locally
-- **Command Validation**: Consider implementing command filtering for sensitive environments
-- **Session Isolation**: Use dedicated tmux sessions for Claude interactions
-- **Firewall Rules**: Ensure the port is not exposed to external networks
-
-## Development
-
-### Building from Source
-
-```bash
-go mod tidy
-go build -o tmux-claude-bridge
-```
-
-### Running Tests
-
-```bash
-go test ./...
-```
-
-### Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
+3. Add tests for new functionality
+4. Ensure all tests pass with `npm test`
 5. Submit a pull request
 
-## License
+## 📄 License
 
 MIT License - see LICENSE file for details.
 
-## Changelog
+## 🆘 Troubleshooting
 
-### v1.0.0
-- Initial release
-- WebSocket server implementation
-- tmux integration
-- Real-time output capture
-- Command completion detection
-- Health monitoring
-- Configurable settings
+### "Not running in tmux session"
+- Ensure you start Claude Code from within an active tmux session
+- Check with `echo $TMUX` - should return a path
+
+### "Failed to create Claude Terminal"  
+- Make sure tmux has permission to create new panes
+- Check if window layout allows horizontal splits
+
+### Commands hanging
+- Use `get_command_status` to check background commands
+- Switch to CT Pane manually with `switch_terminal_focus`
+- Use Ctrl+C in CT Pane to interrupt stuck commands
+
+### Interactive prompts not detected
+- The system looks for common patterns like "password:", "[y/n]", etc.
+- You can manually switch focus with `switch_terminal_focus`
+
+For more help, check the MCP server logs or create an issue in the repository.
