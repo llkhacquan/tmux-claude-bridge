@@ -30,6 +30,7 @@ class TmuxTerminalMCP {
     this.tmux = new TmuxManager();
     this.detector = new CommandDetector();
     this.isInitialized = false;
+    this.helpShown = false;
     this.activeCommands = new Map();
 
     this.setupToolHandlers();
@@ -130,24 +131,27 @@ class TmuxTerminalMCP {
       const { name, arguments: args } = request.params;
 
       try {
-        switch (name) {
-          case 'execute_terminal_command':
-            return await this.executeTerminalCommand(args);
-          case 'get_terminal_status':
-            return await this.getTerminalStatus();
-          case 'create_claude_terminal':
-            return await this.createClaudeTerminal();
-          case 'switch_terminal_focus':
-            return await this.switchTerminalFocus();
-          case 'get_command_status':
-            return await this.getCommandStatus(args);
-          case 'get_terminal_history':
-            return await this.getTerminalHistory(args);
-          case 'get_terminal_help':
-            return await this.getTerminalHelp();
-          default:
-            throw new Error(`Unknown tool: ${name}`);
+        // Show help automatically on first tool use (except get_terminal_help itself)
+        if (!this.helpShown && name !== 'get_terminal_help') {
+          this.helpShown = true;
+          const helpResult = await this.getTerminalHelp();
+          
+          // For the first tool call, prepend help to the actual result
+          const actualResult = await this.executeToolRequest(name, args);
+          
+          return {
+            content: [
+              ...helpResult.content,
+              {
+                type: 'text',
+                text: '\n' + '='.repeat(60) + '\n'
+              },
+              ...actualResult.content
+            ]
+          };
         }
+
+        return await this.executeToolRequest(name, args);
       } catch (error) {
         return {
           content: [
@@ -160,6 +164,27 @@ class TmuxTerminalMCP {
         };
       }
     });
+  }
+
+  async executeToolRequest(name, args) {
+    switch (name) {
+      case 'execute_terminal_command':
+        return await this.executeTerminalCommand(args);
+      case 'get_terminal_status':
+        return await this.getTerminalStatus();
+      case 'create_claude_terminal':
+        return await this.createClaudeTerminal();
+      case 'switch_terminal_focus':
+        return await this.switchTerminalFocus();
+      case 'get_command_status':
+        return await this.getCommandStatus(args);
+      case 'get_terminal_history':
+        return await this.getTerminalHistory(args);
+      case 'get_terminal_help':
+        return await this.getTerminalHelp();
+      default:
+        throw new Error(`Unknown tool: ${name}`);
+    }
   }
 
   setupToolHandlers() {
@@ -191,6 +216,9 @@ class TmuxTerminalMCP {
         console.error(discovery.message);
         console.error('💡 Use create_claude_terminal tool to create one, or I can suggest when to create it.');
       }
+
+      // Show help guide for fresh Claude instances
+      console.error('📚 For usage guide, Claude will automatically show help on first interaction');
 
       this.isInitialized = true;
     };
@@ -695,7 +723,13 @@ Uses tmux process PID monitoring instead of fragile regex patterns for accurate 
 - **Commands hanging**: Check get_command_status and debug with direct tmux
 - **Focus issues**: Use switch_terminal_focus to manually switch focus
 
-Ready to execute commands! Try: get_terminal_status`;
+## Welcome Message
+
+🎉 **You're seeing this guide automatically because this is your first interaction with the Tmux Terminal MCP!**
+
+This comprehensive guide will only show once per Claude session. All the tools are now ready to use.
+
+**Quick Start**: Try \`get_terminal_status\` to see your current setup!`;
 
     return {
       content: [
