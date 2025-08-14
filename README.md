@@ -1,6 +1,6 @@
 # Tmux Terminal MCP
 
-A pure Node.js MCP (Model Context Protocol) server that provides intelligent tmux terminal management for Claude Code. Features the innovative **Claude Terminal (CT Pane)** concept with "Fire and Wait Briefly" execution strategy.
+A pure Node.js MCP (Model Context Protocol) server that provides intelligent tmux terminal management for Claude. Features the innovative **Claude Terminal (CT Pane)** concept with "Fire and Wait Briefly" execution strategy.
 
 ## 🎯 Core Concept: Claude Terminal (CT Pane)
 
@@ -57,9 +57,9 @@ Claude Code <--MCP Protocol--> Node.js MCP Server <--child_process--> tmux comma
 npm install
 ```
 
-### Configure in Claude Code
+### Configure in Claude
 
-Add to your Claude Code MCP configuration (`~/.config/claude-code/mcp_servers.json`):
+Add to your Claude MCP configuration (`~/.config/clause/mcp_servers.json`):
 
 ```json
 {
@@ -78,9 +78,9 @@ Add to your Claude Code MCP configuration (`~/.config/claude-code/mcp_servers.js
    tmux new-session -s claude-work
    ```
 
-2. **Launch Claude Code from within tmux:**
+2. **Launch Claude from within tmux:**
    ```bash
-   claude-code
+   clause
    ```
 
 3. **Let Claude detect and set up your terminal:**
@@ -215,7 +215,7 @@ MIT License - see LICENSE file for details.
 ## 🆘 Troubleshooting
 
 ### "Not running in tmux session"
-- Ensure you start Claude Code from within an active tmux session
+- Ensure you start Claude from within an active tmux session
 - Check with `echo $TMUX` - should return a path
 
 ### "Failed to create Claude Terminal"  
@@ -241,7 +241,7 @@ The **Claude Terminal** is a dedicated tmux pane for Claude's command execution,
 
 ### 🧠 Intelligent Startup Behavior
 
-When Claude Code starts with the tmux MCP:
+When Claude starts with the tmux MCP:
 
 1. **Tmux Detection**: Automatically detects if running inside a tmux session
 2. **Pane Analysis**: Scans current window layout to identify available panes

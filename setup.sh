@@ -71,13 +71,13 @@ check_prerequisites() {
     TMUX_VERSION=$(tmux -V)
     log_success "$TMUX_VERSION ✓"
     
-    # Check Claude Code
-    if ! command -v claude-code &> /dev/null; then
-        log_warning "Claude Code not found in PATH"
-        log_info "Please ensure Claude Code is installed and available"
+    # Check Claude
+    if ! command -v clause &> /dev/null; then
+        log_warning "Claude not found in PATH"
+        log_info "Please ensure Claude is installed and available"
         log_info "Visit: https://docs.anthropic.com/claude/docs"
     else
-        log_success "Claude Code found ✓"
+        log_success "Claude found ✓"
     fi
     
     log_success "Prerequisites check completed"
@@ -133,17 +133,11 @@ EOF
     
     log_success "MCP configuration template created: mcp-config-template.json"
     echo ""
-    log_info "To install this MCP in Claude Code:"
+    log_info "To install this MCP in Claude:"
     echo ""
-    echo "1. Manual installation:"
+    echo "Manual installation:"
     echo "   - Copy the configuration from mcp-config-template.json"
-    echo "   - Add it to ~/.config/claude-code/mcp_servers.json"
-    echo ""
-    echo "2. Or using Claude Code CLI (if available):"
-    echo "   claude-code mcp install tmux-terminal \\"
-    echo "     --command \"node\" \\"
-    echo "     --args \"$project_dir/mcp-server.js\" \\"
-    echo "     --cwd \"$project_dir\""
+    echo "   - Add it to ~/.config/clause/mcp_servers.json"
     echo ""
 }
 
@@ -185,10 +179,10 @@ show_usage_instructions() {
     echo ""
     log_info "Next steps to use the Tmux Terminal MCP:"
     echo ""
-    echo "1. Configure Claude Code (see mcp-config-template.json)"
+    echo "1. Configure Claude (see mcp-config-template.json)"
     echo "2. Start a tmux session: tmux new-session -s myproject"
     echo "3. Navigate to your project directory in tmux"
-    echo "4. Launch Claude Code from within tmux: claude-code"
+    echo "4. Launch Claude from within tmux: clause"
     echo "5. Claude will auto-detect tmux and offer to create a CT Pane"
     echo ""
     log_info "For detailed usage examples, see README.md"

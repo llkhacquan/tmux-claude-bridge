@@ -13,7 +13,7 @@ cd tmux-claude-bridge
 
 ## 🎯 2-Minute Configure
 
-**Add to Claude Code MCP config** (`~/.config/claude-code/mcp_servers.json`):
+**Add to Claude MCP config** (`~/.config/clause/mcp_servers.json`):
 ```json
 {
   "tmux-terminal": {
@@ -30,8 +30,8 @@ cd tmux-claude-bridge
 # Start tmux session
 tmux new-session -s work
 
-# Launch Claude Code from within tmux
-claude-code
+# Launch Claude from within tmux
+clause
 ```
 
 Claude will auto-detect tmux and guide you through CT Pane setup!

@@ -3,6 +3,7 @@
 /**
  * Pure Node.js Tmux MCP Server
  * Implements Claude Terminal (CT Pane) with "Fire and Wait Briefly" execution strategy
+ * For use with Claude CLI (clause)
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
