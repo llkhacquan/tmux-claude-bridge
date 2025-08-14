@@ -98,6 +98,30 @@ class TmuxTerminalMCP {
             },
             additionalProperties: false
           }
+        },
+        {
+          name: 'get_terminal_history',
+          description: 'Read recent commands and their outputs from the Claude Terminal',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              lines: {
+                type: 'number',
+                description: 'Number of lines to capture from history (default: 50)',
+                default: 50
+              }
+            },
+            additionalProperties: false
+          }
+        },
+        {
+          name: 'get_terminal_help',
+          description: 'Show help and initialization guide for the Tmux Terminal MCP',
+          inputSchema: {
+            type: 'object',
+            properties: {},
+            additionalProperties: false
+          }
         }
       ]
     }));
@@ -117,6 +141,10 @@ class TmuxTerminalMCP {
             return await this.switchTerminalFocus();
           case 'get_command_status':
             return await this.getCommandStatus(args);
+          case 'get_terminal_history':
+            return await this.getTerminalHistory(args);
+          case 'get_terminal_help':
+            return await this.getTerminalHelp();
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -526,6 +554,154 @@ class TmuxTerminalMCP {
         {
           type: 'text',
           text: statusText
+        }
+      ]
+    };
+  }
+
+  /**
+   * Get terminal history with recent commands and outputs
+   */
+  async getTerminalHistory({ lines = 50 } = {}) {
+    await this.ensureInitialized();
+
+    if (!this.tmux.ctPane) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: '📋 No Claude Terminal pane available. Use create_claude_terminal to create one first.'
+          }
+        ]
+      };
+    }
+
+    try {
+      const history = await this.tmux.getTerminalHistory(lines);
+      
+      if (!history || history.trim() === '') {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: '📝 No terminal history found in Claude Terminal.'
+            }
+          ]
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `📚 Terminal History (last ${lines} lines):\n\n${history}`
+          }
+        ]
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Failed to get terminal history: ${error.message}`
+          }
+        ]
+      };
+    }
+  }
+
+  /**
+   * Show help and initialization guide
+   */
+  async getTerminalHelp() {
+    const helpText = `🚀 Tmux Terminal MCP - Claude Integration Guide
+
+## What is this MCP?
+This MCP enables Claude to execute commands in a dedicated tmux pane called "Claude Terminal (CT Pane)". It provides intelligent command execution with automatic timeout handling and background monitoring.
+
+## Core Concept: Claude Terminal (CT Pane)
+- 🎯 **Dedicated Pane**: Commands run in a separate tmux pane for isolation
+- 🔄 **Fire and Wait Briefly**: Quick commands get immediate results, long commands run in background
+- 📊 **Smart Detection**: Automatically detects command types and appropriate timeouts
+- 🤖 **Process Monitoring**: Uses process PIDs for reliable completion detection
+
+## Getting Started
+
+### 1. Prerequisites
+- Must be running inside a tmux session
+- Node.js environment with this MCP configured
+
+### 2. First Time Setup
+\`\`\`bash
+# Check status and auto-initialize
+get_terminal_status
+
+# If no CT Pane exists, create one
+create_claude_terminal
+\`\`\`
+
+### 3. Basic Usage
+\`\`\`bash
+# Execute commands (automatically handled)
+execute_terminal_command "ls -la"
+execute_terminal_command "npm install"  # Long-running, goes to background
+
+# Check what's happening
+get_command_status
+get_terminal_history
+
+# Switch focus when needed
+switch_terminal_focus
+\`\`\`
+
+## Available Tools
+
+1. **get_terminal_status** - Check tmux environment and CT Pane status
+2. **create_claude_terminal** - Create new CT Pane if needed
+3. **execute_terminal_command** - Run commands with intelligent handling
+4. **switch_terminal_focus** - Focus on CT Pane for interaction
+5. **get_command_status** - Monitor background/running commands  
+6. **get_terminal_history** - View recent commands and outputs
+7. **get_terminal_help** - This help guide
+
+## Key Features
+
+### Automatic Command Classification
+- **Quick Commands**: \`ls\`, \`pwd\`, \`git status\` - immediate results
+- **Build Commands**: \`npm install\`, \`make\`, \`cargo build\` - background with monitoring
+- **Interactive Tools**: \`vim\`, \`top\`, \`htop\` - switches focus automatically
+- **Password Prompts**: \`sudo\` commands - switches focus for secure input
+
+### Smart Timeout Strategy
+- Quick commands: 3-5 seconds
+- Package managers: 2+ minutes in background
+- Build tools: Background monitoring
+- Interactive/long-running: Immediate focus switch
+
+### Reliable Completion Detection
+Uses tmux process PID monitoring instead of fragile regex patterns for accurate command completion detection.
+
+## Best Practices
+
+1. **Let MCP Handle Strategy**: Don't manually specify wait_for_completion unless needed
+2. **Monitor Long Tasks**: Use get_command_status for background commands
+3. **Interactive Commands**: MCP automatically switches focus when needed
+4. **Debugging**: Use dual approach - both MCP tools and direct tmux commands
+
+## Troubleshooting
+
+- **"Not in tmux"**: Start the MCP server from within a tmux session
+- **"No CT Pane"**: Use create_claude_terminal to create one
+- **Commands hanging**: Check get_command_status and debug with direct tmux
+- **Focus issues**: Use switch_terminal_focus to manually switch focus
+
+Ready to execute commands! Try: get_terminal_status`;
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: helpText
         }
       ]
     };

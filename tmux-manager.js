@@ -197,8 +197,13 @@ export class TmuxManager {
    */
   cleanOutput(output) {
     return output
-      // Remove ANSI escape sequences
-      .replace(/\x1b\[[0-9;]*m/g, '')
+      // Remove all ANSI escape sequences (more comprehensive)
+      .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
+      .replace(/\x1b\[[\?\!0-9;]*[a-zA-Z]/g, '')
+      .replace(/\x1b[)(0-9A-Za-z]/g, '')
+      .replace(/\x1b[\[\]()#;?]*[0-9A-Fa-f]*/g, '')
+      // Remove other control sequences but keep newlines and tabs
+      .replace(/[\x00-\x08\x0B-\x1f\x7f-\x9f]/g, '')
       // Remove carriage returns
       .replace(/\r/g, '')
       // Trim excessive whitespace but preserve structure
@@ -398,4 +403,27 @@ export class TmuxManager {
     
     return interactivePatterns.some(pattern => pattern.test(output));
   }
+
+  /**
+   * Get recent terminal history - just return the raw cleaned lines
+   */
+  async getTerminalHistory(lines = 50) {
+    if (!this.ctPane) {
+      throw new Error('No Claude Terminal pane available');
+    }
+    
+    const target = `${this.currentSession}:${this.currentWindow}.${this.ctPane}`;
+    
+    try {
+      // Capture terminal history
+      const { stdout } = await execAsync(`tmux capture-pane -t ${target} -p -S -${lines}`);
+      const cleanOutput = this.cleanOutput(stdout);
+      
+      // Just return the cleaned lines - let the LLM parse them
+      return cleanOutput;
+    } catch (error) {
+      throw new Error(`Failed to get terminal history: ${error.message}`);
+    }
+  }
+
 }
