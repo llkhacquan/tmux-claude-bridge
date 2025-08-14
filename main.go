@@ -71,15 +71,23 @@ func (tb *TmuxBridge) removeClient(conn *websocket.Conn) {
 }
 
 func (tb *TmuxBridge) broadcast(msg Message) {
-	tb.clientsMu.RLock()
-	defer tb.clientsMu.RUnlock()
+	tb.clientsMu.Lock()
+	defer tb.clientsMu.Unlock()
+	
+	// Create a slice to hold connections to remove
+	var toRemove []*websocket.Conn
 
 	for conn := range tb.clients {
 		if err := conn.WriteJSON(msg); err != nil {
 			tb.logger.WithError(err).Error("Failed to send message to client")
 			conn.Close()
-			delete(tb.clients, conn)
+			toRemove = append(toRemove, conn)
 		}
+	}
+	
+	// Remove failed connections
+	for _, conn := range toRemove {
+		delete(tb.clients, conn)
 	}
 }
 
