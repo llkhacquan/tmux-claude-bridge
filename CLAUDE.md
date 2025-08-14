@@ -10,6 +10,131 @@ The tmux-claude-bridge acts as an MCP server that exposes terminal execution cap
 - Receive real-time output from command execution
 - Work with your local development environment seamlessly
 
+## Smart Tmux MCP - Enhanced Use Cases
+
+### Claude Terminal (CT Pane) Concept
+
+The MCP introduces a **"Claude Terminal"** (CT Pane) - a dedicated tmux pane that serves as Claude's primary workspace for command execution. This provides a clean separation between your interactive work and Claude's automated tasks.
+
+### Intelligent Startup Behavior
+
+When Claude Code starts with the tmux MCP:
+
+1. **Tmux Detection**: Automatically detects if running inside a tmux session
+2. **Pane Analysis**: Scans current window layout to identify available panes
+3. **CT Pane Discovery**: 
+   - If a right pane exists: "✓ Found right pane - I'll use it as your Claude Terminal (CT Pane)"
+   - If no right pane exists: "📋 No right pane found. Should I create a Claude Terminal pane for command execution?"
+4. **Connection Status**: Displays which pane is currently connected as the CT Pane
+
+### Interactive Pane Management
+
+- **Smart Pane Creation**: 
+  ```
+  Claude: "I need a dedicated terminal. Create Claude Terminal pane?"
+  User: "yes" → Creates right pane and designates it as CT Pane
+  ```
+- **Flexible Target Selection**: 
+  ```
+  Claude: "Multiple panes detected. Which should be the Claude Terminal?"
+  User: "pane 2" → Connects to pane 2 as CT Pane
+  ```
+- **Dynamic Reconnection**: 
+  ```
+  Claude: "CT Pane disconnected. Reconnecting to available pane..."
+  ```
+
+### Enhanced Command Routing
+
+- **Default Execution**: All bash commands automatically routed to the CT Pane
+- **Directory Sync**: CT Pane automatically `cd` to Claude's current working directory on startup
+- **Pane-Specific Commands**: `execute_in_pane 3 "ls"` for explicit pane targeting
+- **Context Awareness**: Commands respect CT Pane's current directory and environment
+- **Smart Execution Strategy**: "Fire and Wait Briefly" pattern for optimal responsiveness
+
+### Long-Running Command Management
+
+The MCP uses a **"Fire and Wait Briefly"** strategy for intelligent command handling:
+
+#### **Execution Flow**
+1. **Send Command**: Execute command in CT Pane immediately
+2. **Brief Wait**: Monitor for 5 seconds for quick completion
+3. **Quick Response**: If command completes ≤5s, return output immediately
+4. **Async Mode**: If still running >5s, switch to non-blocking mode
+
+#### **User Experience Examples**
+
+**Quick Commands (≤5s)**
+```
+User: "run ls -la"
+Claude: [waits 1s] "✅ Command completed:
+total 48
+drwxr-xr-x  8 user  staff   256 Jan 14 10:30 .
+-rw-r--r--  1 user  staff  1234 Jan 14 10:30 package.json"
+```
+
+**Long Commands (>5s)**  
+```
+User: "run npm install"
+Claude: [waits 5s, still running] "🔄 npm install is running in CT Pane (5s+)"
+Claude: "Continue our conversation - I'll notify you when it's done!"
+
+User: "what dependencies will be installed?"
+Claude: "Based on your package.json, npm will install react, express..." 
+[Meanwhile npm continues running in CT Pane]
+
+[Later...]
+Claude: "✅ npm install completed successfully (took 3m 42s)"
+```
+
+#### **Command Status Management**
+- **Progress Queries**: User can ask "how's the install going?" for live status
+- **Auto-Completion Alerts**: Automatic notification when long commands finish
+- **Error Detection**: Immediate alerts if commands fail
+- **Output Access**: "Show me the npm install output" retrieves full command output
+- **Concurrent Operations**: Claude remains fully responsive during long-running tasks
+
+#### **Smart Command Classification**
+The MCP recognizes common long-running commands:
+- `npm install/ci`, `yarn install`
+- `pip install`, `conda install` 
+- `docker build`, `docker pull`
+- `make`, `cargo build`, `go build`
+- `pytest`, `npm test`
+- Custom patterns configurable by user
+
+### Session Intelligence
+
+- **Layout Monitoring**: Detects when panes are added, removed, or resized
+- **Pane Status Awareness**: 
+  - Shows which panes are busy with long-running processes
+  - Identifies available panes for CT Pane assignment
+- **Multi-Window Support**: Handles CT Pane connections across tmux windows
+- **State Persistence**: Remembers CT Pane assignment between Claude sessions
+
+### User Experience Examples
+
+**Scenario 1: First Time Setup**
+```
+Claude: "🔍 Detected tmux session 'dev-work' with 2 panes"
+Claude: "📋 No dedicated Claude Terminal found. Should I create one on the right? [y/n]"
+User: "y"
+Claude: "✅ Created Claude Terminal (CT Pane) in pane 2. Ready for commands!"
+```
+
+**Scenario 2: Existing Layout**
+```
+Claude: "✓ Connected to existing Claude Terminal (pane 1)"
+Claude: "📁 CT Pane location: /Users/dev/project"
+Claude: "Ready to execute commands in your dedicated terminal space."
+```
+
+**Scenario 3: Layout Changes**
+```
+Claude: "⚠️ CT Pane (pane 2) was closed. Available panes: 0, 1, 3"
+Claude: "Should I use pane 3 as the new Claude Terminal?"
+```
+
 ## Architecture
 
 ```

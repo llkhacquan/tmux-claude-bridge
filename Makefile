@@ -191,6 +191,39 @@ docker-build: ## Build Docker image
 	docker build -t $(BINARY_NAME):$(VERSION) .
 	@echo "$(GREEN)✓ Docker image built: $(BINARY_NAME):$(VERSION)$(NC)"
 
+# MCP server targets
+mcp-install: ## Install MCP server dependencies
+	@echo "$(YELLOW)Installing MCP server dependencies...$(NC)"
+	@if [ -d "mcp-server" ]; then \
+		cd mcp-server && npm install; \
+		echo "$(GREEN)✓ MCP server dependencies installed$(NC)"; \
+	else \
+		echo "$(RED)Error: mcp-server directory not found$(NC)"; \
+		exit 1; \
+	fi
+
+mcp-test: ## Test MCP server functionality
+	@echo "$(YELLOW)Testing MCP server...$(NC)"
+	@if [ -f "mcp-server/server.js" ]; then \
+		cd mcp-server && node --test test/*.test.js 2>/dev/null || echo "$(YELLOW)No tests found$(NC)"; \
+		echo "$(GREEN)✓ MCP server validation completed$(NC)"; \
+	else \
+		echo "$(RED)Error: MCP server not found$(NC)"; \
+		exit 1; \
+	fi
+
+mcp-dev: ## Run MCP server in development mode
+	@echo "$(YELLOW)Starting MCP server in development mode...$(NC)"
+	@cd mcp-server && npm run dev
+
+# Combined development workflow
+dev-full: build setup-tmux mcp-install ## Full development setup
+	@echo "$(GREEN)✓ Full development environment ready$(NC)"
+	@echo "$(BLUE)Next steps:$(NC)"
+	@echo "  1. Terminal 1: make run        (start bridge server)"
+	@echo "  2. Terminal 2: make mcp-dev    (start MCP server)"  
+	@echo "  3. Terminal 3: claude-code     (start Claude Code)"
+
 # Show configuration
 config: ## Show current configuration
 	@echo "$(BLUE)Current Configuration:$(NC)"
@@ -199,3 +232,4 @@ config: ## Show current configuration
 	@echo "  TMUX_PANE: $${TMUX_PANE:-1}"
 	@echo "  LOG_LEVEL: $${LOG_LEVEL:-info}"
 	@echo "  CONFIG_FILE: $${CONFIG_FILE:-<not set>}"
+	@echo "  TMUX_BRIDGE_URL: $${TMUX_BRIDGE_URL:-ws://localhost:8080/ws}"

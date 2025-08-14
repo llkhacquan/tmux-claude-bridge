@@ -1,0 +1,36 @@
+{
+  "name": "tmux-claude-bridge-mcp",
+  "version": "1.0.0",
+  "description": "Smart MCP server for tmux-claude-bridge with intelligent pane management",
+  "type": "module",
+  "main": "server.js",
+  "bin": {
+    "tmux-claude-bridge-mcp": "./server.js"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --inspect server.js",
+    "test": "node --test test/*.test.js",
+    "lint": "eslint *.js",
+    "format": "prettier --write *.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "ws": "^8.16.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.0"
+  },
+  "keywords": ["mcp", "terminal", "tmux", "claude", "bridge", "smart"],
+  "author": "tmux-claude-bridge",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/tmux-claude-bridge.git"
+  }
+}
