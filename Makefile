@@ -112,17 +112,12 @@ vet: ## Run go vet
 
 # tmux setup
 setup-tmux: ## Create tmux session for development
-	@echo "$(YELLOW)Setting up tmux session...$(NC)"
-	@if ! tmux has-session -t claude-bridge 2>/dev/null; then \
-		tmux new-session -d -s claude-bridge -x 120 -y 40; \
-		tmux split-window -h -t claude-bridge; \
-		tmux select-pane -t claude-bridge:0; \
-		tmux send-keys -t claude-bridge:0 'echo "Claude Code pane - use this for Claude interactions"' Enter; \
-		tmux send-keys -t claude-bridge:1 'echo "Terminal pane - commands will execute here"' Enter; \
-		echo "$(GREEN)✓ tmux session 'claude-bridge' created$(NC)"; \
-		echo "$(BLUE)Attach with: tmux attach-session -t claude-bridge$(NC)"; \
+	@echo "$(YELLOW)Setting up tmux session using script...$(NC)"
+	@if [ -f "./scripts/setup-tmux.sh" ]; then \
+		AUTO_ATTACH=false ./scripts/setup-tmux.sh; \
 	else \
-		echo "$(GREEN)✓ tmux session 'claude-bridge' already exists$(NC)"; \
+		echo "$(RED)Error: setup-tmux.sh script not found$(NC)"; \
+		exit 1; \
 	fi
 
 kill-tmux: ## Kill the tmux session
