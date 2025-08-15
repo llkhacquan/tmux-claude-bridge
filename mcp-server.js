@@ -762,6 +762,49 @@ class TmuxTerminalMCP {
    * Detect if a pager is currently active in the target pane
    */
   async detectPager({ target_pane = null } = {}) {
+    // For pager detection with explicit target_pane, we can bypass CT pane requirement
+    if (target_pane) {
+      try {
+        // Just ensure tmux environment is detected
+        await this.tmux.detectTmuxEnvironment();
+        const state = await this.tmux.detectPagerState(target_pane);
+        
+        if (state.error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error detecting pager: ${state.error}`
+              }
+            ]
+          };
+        }
+
+        const statusText = state.isPager ? 
+          `Pager detected: ${state.command} (confidence: ${state.confidence})${state.alternateScreen ? ' [alternate screen]' : ''}` :
+          'No pager detected';
+
+        return {
+          content: [
+            {
+              type: 'text', 
+              text: statusText
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Failed to detect pager: ${error.message}`
+            }
+          ]
+        };
+      }
+    }
+
+    // Default behavior requires full initialization
     await this.ensureInitialized();
 
     try {
@@ -806,6 +849,58 @@ class TmuxTerminalMCP {
    * Get detailed pager information with suggested actions
    */
   async getPagerInfo({ target_pane = null } = {}) {
+    // For pager info with explicit target_pane, bypass CT pane requirement
+    if (target_pane) {
+      try {
+        await this.tmux.detectTmuxEnvironment();
+        const info = await this.tmux.getPagerInfo(target_pane);
+        
+        if (!info.active) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'No active pager detected'
+              }
+            ]
+          };
+        }
+
+        const actionsText = info.suggestedActions.map(action => `- ${action}`).join('\n');
+        const keysText = Object.entries(info.commonKeys)
+          .map(([key, desc]) => `  ${key}: ${desc}`)
+          .join('\n');
+
+        const infoText = `Active Pager: ${info.command}
+Alternate Screen: ${info.alternateScreen ? 'Yes' : 'No'}
+Confidence: ${info.confidence}
+
+Suggested Actions:
+${actionsText}
+
+Common Keys:
+${keysText}`;
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: infoText
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Failed to get pager info: ${error.message}`
+            }
+          ]
+        };
+      }
+    }
+
     await this.ensureInitialized();
 
     try {

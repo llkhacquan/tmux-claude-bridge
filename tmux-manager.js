@@ -24,7 +24,6 @@ export class TmuxManager {
       const { stdout } = await execAsync('tmux display-message -p "#S:#I.#P"');
       const [session, windowPane] = stdout.trim().split(':');
       const [window, pane] = windowPane.split('.');
-      
       this.currentSession = session;
       this.currentWindow = window;
       this.currentPane = pane;
@@ -573,6 +572,11 @@ export class TmuxManager {
         isPager: false,
         error: 'No target pane specified'
       };
+    }
+
+    // Ensure we have current tmux context
+    if (!this.currentSession || !this.currentWindow) {
+      await this.detectTmuxEnvironment();
     }
 
     const target = `${this.currentSession}:${this.currentWindow}.${targetPane}`;
