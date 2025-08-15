@@ -680,6 +680,10 @@ class TmuxTerminalMCP {
     
     console.error('🚀 Tmux Terminal MCP Server running');
     console.error('🎯 Ready to manage Claude Terminal (CT Pane)');
+    console.error('');
+    console.error('💡 Claude: I have loaded the Tmux Terminal MCP for shared command execution.');
+    console.error('    Use get_terminal_status or any MCP tool to see the setup guide and permission request.');
+    console.error('    This enables shared terminal context and long-running command support.');
   }
 }
 

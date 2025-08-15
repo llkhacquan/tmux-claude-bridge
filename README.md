@@ -8,6 +8,12 @@ The **Claude Terminal** is a dedicated tmux pane for Claude's command execution,
 
 ## ✨ Key Features
 
+### 🔔 Zero-Setup Auto-Announcement
+- Automatically announces itself to Claude when MCP loads
+- Claude immediately knows about shared terminal capabilities
+- No manual setup or commands required from user
+- Triggers permission request on first use
+
 ### 🧠 Intelligent Startup Behavior
 - Auto-detects tmux environment and current session
 - Scans window layout to find suitable Claude Terminal pane
