@@ -4,7 +4,7 @@
   "description": "Pure Node.js MCP server for intelligent tmux terminal management with Claude Terminal (CT Pane) support",
   "main": "mcp-server.js",
   "bin": {
-    "tmux-terminal-mcp": "./mcp-server.js"
+    "tmux-terminal-mcp": "mcp-server.js"
   },
   "type": "module",
   "scripts": {
@@ -36,7 +36,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/llkhacquan/tmux-claude-bridge.git"
+    "url": "git+https://github.com/llkhacquan/tmux-claude-bridge.git"
   },
   "homepage": "https://github.com/llkhacquan/tmux-claude-bridge#readme",
   "bugs": {
@@ -45,7 +45,9 @@
   "mcp": {
     "server": {
       "command": "node",
-      "args": ["mcp-server.js"]
+      "args": [
+        "mcp-server.js"
+      ]
     }
   }
 }
