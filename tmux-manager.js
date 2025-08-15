@@ -552,4 +552,178 @@ export class TmuxManager {
     return '[EXECUTED]'; // Executed but status unclear
   }
 
+  // ===== PAGER DETECTION METHODS =====
+
+  /**
+   * Known pager commands that typically use alternate screen
+   */
+  static PAGER_COMMANDS = [
+    'less', 'more', 'most', 'bat', 'man', 'git',
+    'journalctl', 'systemctl', 'docker', 'kubectl',
+    'vim', 'nano', 'emacs', 'vi'
+  ];
+
+  /**
+   * Detect if a pane is currently in pager mode
+   */
+  async detectPagerState(paneIndex = null) {
+    const targetPane = paneIndex || this.ctPane;
+    if (!targetPane) {
+      return {
+        isPager: false,
+        error: 'No target pane specified'
+      };
+    }
+
+    const target = `${this.currentSession}:${this.currentWindow}.${targetPane}`;
+
+    try {
+      // Get pager detection info using tmux format variables
+      const [currentCommand, alternateOn] = await Promise.all([
+        execAsync(`tmux display-message -t ${target} -p '#{pane_current_command}'`),
+        execAsync(`tmux display-message -t ${target} -p '#{alternate_on}'`)
+      ]);
+
+      const command = currentCommand.stdout.trim();
+      const isAlternateScreen = alternateOn.stdout.trim() === '1';
+      const isKnownPager = TmuxManager.PAGER_COMMANDS.some(pager => 
+        command.toLowerCase().includes(pager.toLowerCase())
+      );
+
+      return {
+        isPager: isAlternateScreen || isKnownPager,
+        command,
+        alternateScreen: isAlternateScreen,
+        isKnownPager,
+        confidence: isAlternateScreen ? 'high' : (isKnownPager ? 'medium' : 'low')
+      };
+    } catch (error) {
+      return {
+        isPager: false,
+        error: `Failed to detect pager state: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Simple boolean check if pager is active
+   */
+  async isPagerActive(paneIndex = null) {
+    const state = await this.detectPagerState(paneIndex);
+    return state.isPager;
+  }
+
+  /**
+   * Get detailed pager information
+   */
+  async getPagerInfo(paneIndex = null) {
+    const state = await this.detectPagerState(paneIndex);
+    
+    if (!state.isPager) {
+      return {
+        active: false,
+        message: 'No pager detected'
+      };
+    }
+
+    return {
+      active: true,
+      command: state.command,
+      alternateScreen: state.alternateScreen,
+      confidence: state.confidence,
+      suggestedActions: this.getSuggestedPagerActions(state.command),
+      commonKeys: this.getCommonPagerKeys(state.command)
+    };
+  }
+
+  /**
+   * Send keys to active pager
+   */
+  async sendPagerKeys(keys, paneIndex = null) {
+    const targetPane = paneIndex || this.ctPane;
+    if (!targetPane) {
+      throw new Error('No target pane specified');
+    }
+
+    const target = `${this.currentSession}:${this.currentWindow}.${targetPane}`;
+    
+    try {
+      await execAsync(`tmux send-keys -t ${target} '${keys}'`);
+      return {
+        success: true,
+        keys: keys,
+        pane: targetPane
+      };
+    } catch (error) {
+      throw new Error(`Failed to send keys to pager: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get suggested actions based on pager type
+   */
+  getSuggestedPagerActions(command) {
+    const cmd = command.toLowerCase();
+    
+    if (cmd.includes('less') || cmd.includes('more')) {
+      return [
+        'auto_read_all - Scroll through all content automatically',
+        'manual_control - Switch focus for manual navigation',
+        'exit_pager - Press q to exit',
+        'search_content - Enter search mode with /'
+      ];
+    }
+    
+    if (cmd.includes('git')) {
+      return [
+        'auto_read_all - Capture git output automatically', 
+        'exit_pager - Press q to exit git pager',
+        'manual_control - Navigate git diff/log manually'
+      ];
+    }
+    
+    if (cmd.includes('man')) {
+      return [
+        'manual_control - Navigate manual pages',
+        'search_manual - Search with / or ?',
+        'exit_pager - Press q to exit'
+      ];
+    }
+
+    return [
+      'manual_control - Switch focus for interaction',
+      'auto_exit - Exit automatically', 
+      'capture_content - Read current screen'
+    ];
+  }
+
+  /**
+   * Get common key mappings for pager type
+   */
+  getCommonPagerKeys(command) {
+    const cmd = command.toLowerCase();
+    
+    const commonKeys = {
+      'q': 'Exit pager',
+      'Space': 'Next page',
+      'b': 'Previous page',
+      'j': 'Down one line',
+      'k': 'Up one line',
+      'g': 'Go to beginning',
+      'G': 'Go to end'
+    };
+
+    if (cmd.includes('less') || cmd.includes('git')) {
+      return {
+        ...commonKeys,
+        '/': 'Search forward',
+        '?': 'Search backward',
+        'n': 'Next search result',
+        'N': 'Previous search result'
+      };
+    }
+
+    return commonKeys;
+  }
+
 }

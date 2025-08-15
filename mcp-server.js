@@ -141,6 +141,56 @@ class TmuxTerminalMCP {
             },
             additionalProperties: false
           }
+        },
+        {
+          name: 'detect_pager',
+          description: 'Detect if a pager (less, more, git log, man, etc.) is currently active in a pane',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              target_pane: {
+                type: 'number',
+                description: 'Target pane number (1=right1, 2=right2, etc.). If not specified, uses default CT Pane.',
+                minimum: 1
+              }
+            },
+            additionalProperties: false
+          }
+        },
+        {
+          name: 'get_pager_info', 
+          description: 'Get detailed information about an active pager including suggested actions and key mappings',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              target_pane: {
+                type: 'number', 
+                description: 'Target pane number (1=right1, 2=right2, etc.). If not specified, uses default CT Pane.',
+                minimum: 1
+              }
+            },
+            additionalProperties: false
+          }
+        },
+        {
+          name: 'send_pager_keys',
+          description: 'Send keys to an active pager (q=quit, space=next page, b=prev page, /=search, etc.)',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              keys: {
+                type: 'string',
+                description: 'Keys to send to the pager (e.g., "q" to quit, " " for next page, "j" for down)'
+              },
+              target_pane: {
+                type: 'number',
+                description: 'Target pane number (1=right1, 2=right2, etc.). If not specified, uses default CT Pane.',
+                minimum: 1
+              }
+            },
+            required: ['keys'],
+            additionalProperties: false
+          }
         }
       ]
     }));
@@ -200,6 +250,12 @@ class TmuxTerminalMCP {
         return await this.getTerminalHistory(args);
       case 'get_terminal_help':
         return await this.getTerminalHelp(args);
+      case 'detect_pager':
+        return await this.detectPager(args);
+      case 'get_pager_info':
+        return await this.getPagerInfo(args);
+      case 'send_pager_keys':
+        return await this.sendPagerKeys(args);
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -698,6 +754,150 @@ class TmuxTerminalMCP {
         }
       ]
     };
+  }
+
+  // ===== PAGER DETECTION MCP TOOLS =====
+
+  /**
+   * Detect if a pager is currently active in the target pane
+   */
+  async detectPager({ target_pane = null } = {}) {
+    await this.ensureInitialized();
+
+    try {
+      const state = await this.tmux.detectPagerState(target_pane);
+      
+      if (state.error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error detecting pager: ${state.error}`
+            }
+          ]
+        };
+      }
+
+      const statusText = state.isPager ? 
+        `Pager detected: ${state.command} (confidence: ${state.confidence})${state.alternateScreen ? ' [alternate screen]' : ''}` :
+        'No pager detected';
+
+      return {
+        content: [
+          {
+            type: 'text', 
+            text: statusText
+          }
+        ]
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Failed to detect pager: ${error.message}`
+          }
+        ]
+      };
+    }
+  }
+
+  /**
+   * Get detailed pager information with suggested actions
+   */
+  async getPagerInfo({ target_pane = null } = {}) {
+    await this.ensureInitialized();
+
+    try {
+      const info = await this.tmux.getPagerInfo(target_pane);
+      
+      if (!info.active) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'No active pager detected'
+            }
+          ]
+        };
+      }
+
+      const actionsText = info.suggestedActions.map(action => `- ${action}`).join('\n');
+      const keysText = Object.entries(info.commonKeys)
+        .map(([key, desc]) => `  ${key}: ${desc}`)
+        .join('\n');
+
+      const infoText = `Active Pager: ${info.command}
+Alternate Screen: ${info.alternateScreen ? 'Yes' : 'No'}
+Confidence: ${info.confidence}
+
+Suggested Actions:
+${actionsText}
+
+Common Keys:
+${keysText}`;
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: infoText
+          }
+        ]
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Failed to get pager info: ${error.message}`
+          }
+        ]
+      };
+    }
+  }
+
+  /**
+   * Send keys to active pager
+   */
+  async sendPagerKeys({ keys, target_pane = null }) {
+    await this.ensureInitialized();
+
+    try {
+      // First check if pager is active
+      const isPagerActive = await this.tmux.isPagerActive(target_pane);
+      if (!isPagerActive) {
+        return {
+          content: [
+            {
+              type: 'text', 
+              text: 'No active pager detected. Cannot send keys.'
+            }
+          ]
+        };
+      }
+
+      // Send keys to pager
+      const result = await this.tmux.sendPagerKeys(keys, target_pane);
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Keys "${keys}" sent to pager in pane ${result.pane}`
+          }
+        ]
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Failed to send keys to pager: ${error.message}`
+          }
+        ]
+      };
+    }
   }
 
   async run() {
