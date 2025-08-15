@@ -1,6 +1,6 @@
 {
   "name": "tmux-terminal-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Pure Node.js MCP server for intelligent tmux terminal management with Claude Terminal (CT Pane) support",
   "main": "mcp-server.js",
   "bin": {

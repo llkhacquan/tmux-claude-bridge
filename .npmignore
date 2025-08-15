@@ -9,6 +9,7 @@ test-*.js
 docs/
 *.md
 !README.md
+!help-content/*.md
 
 # Git files
 .git/
