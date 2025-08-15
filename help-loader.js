@@ -73,6 +73,12 @@ export class HelpLoader {
       case 'first-time':
         return this.loadFile('auto-welcome');
       
+      case 'permission-granted':
+        return this.loadFile('permission-granted');
+        
+      case 'permission-reminder':
+        return this.loadFile('permission-reminder');
+      
       case 'claude-instructions':
         return this.loadFile('claude-instructions');
       

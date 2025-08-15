@@ -32,4 +32,15 @@ This MCP enables you to run ALL bash commands in a dedicated tmux pane (Claude T
 - **Check status**: `get_command_status` for running background tasks
 - **Explore projects**: `execute_terminal_command "ls -la"` (immediate)
 
-**Ready!** Use `get_terminal_status` to check current setup.
+## 🤔 Permission Request
+**Should I run ALL terminal commands through the dedicated tmux pane?**
+
+This enables both key benefits above:
+- ✅ Long commands won't block our conversation  
+- ✅ I can debug your terminal issues by seeing command history
+
+**Options:**
+- **Yes** → I'll automatically use the MCP for all bash commands
+- **No** → I'll ask each time or use direct bash commands
+
+Please let me know your preference!

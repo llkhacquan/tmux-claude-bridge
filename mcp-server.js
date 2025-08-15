@@ -125,8 +125,8 @@ class TmuxTerminalMCP {
             properties: {
               section: {
                 type: 'string',
-                description: 'Specific help section (quick, tools, troubleshooting, first-time, claude-instructions) or default for complete help',
-                enum: ['quick', 'tools', 'troubleshooting', 'first-time', 'claude-instructions', 'default']
+                description: 'Specific help section or default for complete help',
+                enum: ['quick', 'tools', 'troubleshooting', 'first-time', 'claude-instructions', 'permission-granted', 'permission-reminder', 'default']
               }
             },
             additionalProperties: false
