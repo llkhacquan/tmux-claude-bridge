@@ -2,6 +2,22 @@
 
 A pure Node.js MCP (Model Context Protocol) server that provides intelligent tmux terminal management for Claude. Features the innovative **Claude Terminal (CT Pane)** concept with "Fire and Wait Briefly" execution strategy.
 
+## 📦 Quick Install
+
+```bash
+npm install -g tmux-terminal-mcp
+```
+
+Then add to your Claude MCP configuration (`~/.config/clause/mcp_servers.json`):
+
+```json
+{
+  "tmux-terminal": {
+    "command": "tmux-terminal-mcp"
+  }
+}
+```
+
 ## 🎯 Core Concept: Claude Terminal (CT Pane)
 
 The **Claude Terminal** is a dedicated tmux pane for Claude's command execution, providing clean separation between your interactive work and Claude's automated tasks. This prevents command interference and gives you full control over both environments.
