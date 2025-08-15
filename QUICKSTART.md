@@ -4,16 +4,31 @@
 
 ## 🚀 1-Minute Install
 
+**Option 1: From npm (Recommended)**
 ```bash
 # Prerequisites: Node.js 18+, tmux installed
-git clone https://github.com/your-username/tmux-claude-bridge.git
+npm install -g tmux-terminal-mcp
+```
+
+**Option 2: From source**
+```bash
+git clone https://github.com/llkhacquan/tmux-claude-bridge.git
 cd tmux-claude-bridge
-./setup.sh
+npm install
 ```
 
 ## 🎯 2-Minute Configure
 
-**Add to Claude MCP config** (`~/.config/clause/mcp_servers.json`):
+**For npm installation** - Add to Claude MCP config (`~/.config/claude/mcp_servers.json`):
+```json
+{
+  "tmux-terminal": {
+    "command": "tmux-terminal-mcp"
+  }
+}
+```
+
+**For source installation**:
 ```json
 {
   "tmux-terminal": {
@@ -31,7 +46,7 @@ cd tmux-claude-bridge
 tmux new-session -s work
 
 # Launch Claude from within tmux
-clause
+claude
 ```
 
 Claude will auto-detect tmux and guide you through CT Pane setup!

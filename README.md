@@ -8,7 +8,7 @@ A pure Node.js MCP (Model Context Protocol) server that provides intelligent tmu
 npm install -g tmux-terminal-mcp
 ```
 
-Then add to your Claude MCP configuration (`~/.config/clause/mcp_servers.json`):
+Then add to your Claude MCP configuration (`~/.config/claude/mcp_servers.json`):
 
 ```json
 {
@@ -74,15 +74,28 @@ Claude Code <--MCP Protocol--> Node.js MCP Server <--child_process--> tmux comma
 - tmux installed and running
 - Must run the MCP server from within a tmux session
 
-### Install Dependencies
+### Option 1: Install from npm (Recommended)
 ```bash
+npm install -g tmux-terminal-mcp
+```
+
+Add to your Claude MCP configuration (`~/.config/claude/mcp_servers.json`):
+```json
+{
+  "tmux-terminal": {
+    "command": "tmux-terminal-mcp"
+  }
+}
+```
+
+### Option 2: Install from source
+```bash
+git clone https://github.com/llkhacquan/tmux-claude-bridge.git
+cd tmux-claude-bridge
 npm install
 ```
 
-### Configure in Claude
-
-Add to your Claude MCP configuration (`~/.config/clause/mcp_servers.json`):
-
+Add to your Claude MCP configuration:
 ```json
 {
   "tmux-terminal": {
@@ -102,7 +115,7 @@ Add to your Claude MCP configuration (`~/.config/clause/mcp_servers.json`):
 
 2. **Launch Claude from within tmux:**
    ```bash
-   clause
+   claude
    ```
 
 3. **Let Claude detect and set up your terminal:**

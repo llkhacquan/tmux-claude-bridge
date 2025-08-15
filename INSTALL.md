@@ -20,16 +20,24 @@ node --version
 tmux -V
 
 # Check Claude installation
-clause --version
+claude --version
 ```
 
 ## 🚀 Installation Steps
 
-### Step 1: Download and Install
+### Step 1: Choose Installation Method
+
+#### Option A: Install from npm (Recommended)
+
+```bash
+npm install -g tmux-terminal-mcp
+```
+
+#### Option B: Install from source
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/tmux-claude-bridge.git
+git clone https://github.com/llkhacquan/tmux-claude-bridge.git
 cd tmux-claude-bridge
 
 # Install dependencies
@@ -43,18 +51,27 @@ npm test
 
 Add the MCP server to your Claude configuration:
 
-**Manual Configuration:**
-
 1. Open your MCP configuration file:
    ```bash
    # macOS/Linux
-   vi ~/.config/clause/mcp_servers.json
+   vi ~/.config/claude/mcp_servers.json
    
    # Windows
-   notepad %APPDATA%\clause\mcp_servers.json
+   notepad %APPDATA%\claude\mcp_servers.json
    ```
 
 2. Add the tmux-terminal MCP:
+
+   **For npm installation:**
+   ```json
+   {
+     "tmux-terminal": {
+       "command": "tmux-terminal-mcp"
+     }
+   }
+   ```
+
+   **For source installation:**
    ```json
    {
      "tmux-terminal": {
@@ -72,7 +89,7 @@ Add the MCP server to your Claude configuration:
 tmux new-session -s test-claude
 
 # In the tmux session, start Claude
-clause
+claude
 
 # Verify MCP is loaded (check Claude startup logs)
 # You should see: "🚀 Tmux Terminal MCP Server running"
@@ -90,7 +107,7 @@ tmux new-session -s myproject
 cd /path/to/your/project
 
 # Launch Claude from within tmux
-clause
+claude
 ```
 
 ### 2. Initial Setup with Claude
@@ -174,7 +191,7 @@ chmod +x mcp-server.js
 ```bash
 # Verify absolute paths in configuration
 # Check Claude logs for MCP errors
-clause --debug
+claude --debug
 ```
 
 ### Verification Commands
@@ -237,7 +254,7 @@ Run with verbose logging:
 
 ```bash
 # In your tmux session
-DEBUG=1 clause
+DEBUG=1 claude
 ```
 
 This will show detailed MCP communication and tmux operations.
