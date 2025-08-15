@@ -157,20 +157,21 @@ export class TmuxManager {
   }
 
   /**
-   * Send keys to CT Pane
+   * Send keys to target pane
    */
-  async sendKeys(command, pressEnter = false) {
-    if (!this.ctPane) {
-      throw new Error('No Claude Terminal pane available');
+  async sendKeys(command, pressEnter = false, targetPane = null) {
+    const paneIndex = targetPane || this.ctPane;
+    if (!paneIndex) {
+      throw new Error('No target pane specified and no default Claude Terminal pane available');
     }
     
-    const target = `${this.currentSession}:${this.currentWindow}.${this.ctPane}`;
+    const target = `${this.currentSession}:${this.currentWindow}.${paneIndex}`;
     const enterKey = pressEnter ? ' C-m' : '';
     
     try {
       await execAsync(`tmux send-keys -t ${target} '${command.replace(/'/g, "'\"'\"'")}' ${enterKey}`);
     } catch (error) {
-      throw new Error(`Failed to send keys: ${error.message}`);
+      throw new Error(`Failed to send keys to pane ${paneIndex}: ${error.message}`);
     }
   }
 
@@ -336,16 +337,17 @@ export class TmuxManager {
   }
 
   /**
-   * Clear the CT Pane
+   * Clear the target pane
    */
-  async clearPane() {
-    if (!this.ctPane) {
-      throw new Error('No Claude Terminal pane available');
+  async clearPane(targetPane = null) {
+    const paneIndex = targetPane || this.ctPane;
+    if (!paneIndex) {
+      throw new Error('No target pane specified and no default Claude Terminal pane available');
     }
     
     // Send Ctrl+C to interrupt any running command, then clear
-    await this.sendKeys('', false); // Just to ensure pane is active
-    await execAsync(`tmux send-keys -t ${this.currentSession}:${this.currentWindow}.${this.ctPane} C-c C-l`);
+    await this.sendKeys('', false, paneIndex); // Just to ensure pane is active
+    await execAsync(`tmux send-keys -t ${this.currentSession}:${this.currentWindow}.${paneIndex} C-c C-l`);
     
     // Wait for clear to take effect
     await new Promise(resolve => setTimeout(resolve, 200));
@@ -405,14 +407,15 @@ export class TmuxManager {
   }
 
   /**
-   * Get recent terminal history - just return the raw cleaned lines
+   * Get recent terminal history from target pane - just return the raw cleaned lines
    */
-  async getTerminalHistory(lines = 50) {
-    if (!this.ctPane) {
-      throw new Error('No Claude Terminal pane available');
+  async getTerminalHistory(lines = 50, targetPane = null) {
+    const paneIndex = targetPane || this.ctPane;
+    if (!paneIndex) {
+      throw new Error('No target pane specified and no default Claude Terminal pane available');
     }
     
-    const target = `${this.currentSession}:${this.currentWindow}.${this.ctPane}`;
+    const target = `${this.currentSession}:${this.currentWindow}.${paneIndex}`;
     
     try {
       // Capture terminal history
@@ -422,7 +425,7 @@ export class TmuxManager {
       // Just return the cleaned lines - let the LLM parse them
       return cleanOutput;
     } catch (error) {
-      throw new Error(`Failed to get terminal history: ${error.message}`);
+      throw new Error(`Failed to get terminal history from pane ${paneIndex}: ${error.message}`);
     }
   }
 

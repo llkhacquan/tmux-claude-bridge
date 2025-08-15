@@ -81,6 +81,9 @@ export class HelpLoader {
       
       case 'claude-instructions':
         return this.loadFile('claude-instructions');
+        
+      case 'pane-patterns':
+        return this.loadFile('pane-patterns');
       
       case 'troubleshooting':
         return this.loadMultiple(['troubleshooting', 'tools']);

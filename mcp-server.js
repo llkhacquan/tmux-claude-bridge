@@ -56,6 +56,11 @@ class TmuxTerminalMCP {
                 type: 'boolean',
                 description: 'Whether to wait for command completion (default: auto-detected)',
                 default: null
+              },
+              target_pane: {
+                type: 'number',
+                description: 'Target pane number (1=right1, 2=right2, etc.). If not specified, uses default CT Pane.',
+                minimum: 1
               }
             },
             required: ['command']
@@ -112,6 +117,11 @@ class TmuxTerminalMCP {
                 type: 'number',
                 description: 'Number of lines to capture from history (default: 50)',
                 default: 50
+              },
+              target_pane: {
+                type: 'number',
+                description: 'Target pane number (1=right1, 2=right2, etc.). If not specified, uses default CT Pane.',
+                minimum: 1
               }
             },
             additionalProperties: false
@@ -126,7 +136,7 @@ class TmuxTerminalMCP {
               section: {
                 type: 'string',
                 description: 'Specific help section or default for complete help',
-                enum: ['quick', 'tools', 'troubleshooting', 'first-time', 'claude-instructions', 'permission-granted', 'permission-reminder', 'default']
+                enum: ['quick', 'tools', 'troubleshooting', 'first-time', 'claude-instructions', 'permission-granted', 'permission-reminder', 'pane-patterns', 'default']
               }
             },
             additionalProperties: false
@@ -235,15 +245,16 @@ class TmuxTerminalMCP {
   /**
    * Execute command with "Fire and Wait Briefly" strategy
    */
-  async executeTerminalCommand({ command, wait_for_completion = null }) {
+  async executeTerminalCommand({ command, wait_for_completion = null, target_pane = null }) {
     await this.ensureInitialized();
 
-    if (!this.tmux.ctPane) {
+    const paneIndex = target_pane || this.tmux.ctPane;
+    if (!paneIndex) {
       return {
         content: [
           {
             type: 'text',
-            text: '📋 No Claude Terminal pane available. Use create_claude_terminal to create one first.'
+            text: '📋 No target pane specified and no default Claude Terminal pane available. Use create_claude_terminal to create one first.'
           }
         ]
       };
@@ -286,8 +297,8 @@ class TmuxTerminalMCP {
     }
 
     // Clear pane and execute command
-    await this.tmux.clearPane();
-    await this.tmux.sendKeys(command, true);
+    await this.tmux.clearPane(paneIndex);
+    await this.tmux.sendKeys(command, true, paneIndex);
 
     // Implement "Fire and Wait Briefly" strategy
     const shouldWaitForCompletion = wait_for_completion !== null ? 
@@ -598,39 +609,41 @@ class TmuxTerminalMCP {
   /**
    * Get terminal history with recent commands and outputs
    */
-  async getTerminalHistory({ lines = 50 } = {}) {
+  async getTerminalHistory({ lines = 50, target_pane = null } = {}) {
     await this.ensureInitialized();
 
-    if (!this.tmux.ctPane) {
+    const paneIndex = target_pane || this.tmux.ctPane;
+    if (!paneIndex) {
       return {
         content: [
           {
             type: 'text',
-            text: '📋 No Claude Terminal pane available. Use create_claude_terminal to create one first.'
+            text: '📋 No target pane specified and no default Claude Terminal pane available. Use create_claude_terminal to create one first.'
           }
         ]
       };
     }
 
     try {
-      const history = await this.tmux.getTerminalHistory(lines);
+      const history = await this.tmux.getTerminalHistory(lines, paneIndex);
       
       if (!history || history.trim() === '') {
         return {
           content: [
             {
               type: 'text',
-              text: '📝 No terminal history found in Claude Terminal.'
+              text: `📝 No terminal history found in pane ${paneIndex}.`
             }
           ]
         };
       }
 
+      const paneLabel = target_pane ? ` from pane ${paneIndex}` : '';
       return {
         content: [
           {
             type: 'text',
-            text: `📚 Terminal History (last ${lines} lines):\n\n${history}`
+            text: `📚 Terminal History${paneLabel} (last ${lines} lines):\n\n${history}`
           }
         ]
       };

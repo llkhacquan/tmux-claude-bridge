@@ -32,6 +32,12 @@ This MCP enables you to run ALL bash commands in a dedicated tmux pane (Claude T
 - **Check status**: `get_command_status` for running background tasks
 - **Explore projects**: `execute_terminal_command "ls -la"` (immediate)
 
+## 🎯 User Command Patterns (Learn These!):
+- **`right1: make check`** → Run command in right pane 1 (next to current)
+- **`right2: what went wrong?`** → Debug issues in right pane 2  
+- **`right3: ls -la`** → Execute in right pane 3
+- When user says "right[N]:", use target_pane parameter to specify which pane
+
 ## 🤔 Permission Request
 **Should I run ALL terminal commands through the dedicated tmux pane?**
 

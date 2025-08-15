@@ -32,3 +32,18 @@ You have access to the user's terminal through the Tmux Terminal MCP. ALL termin
 - Can debug user's terminal issues by checking history
 - Long commands don't block conversation
 - Persistent directory and environment state
+
+## 🎯 IMPORTANT: Multi-Pane Pattern Recognition
+### **User Pattern: `right[N]: <command/question>`**
+When user types:
+- `right1: make check` → Use target_pane=1
+- `right2: what went wrong?` → Use target_pane=2, then get_terminal_history
+- `right3: ls -la` → Use target_pane=3
+
+### **Your Response:**
+1. **Recognize the pattern** (right1:, right2:, etc.)
+2. **Extract target pane number** 
+3. **Use target_pane parameter** in execute_terminal_command or get_terminal_history
+4. **Acknowledge the target** ("Running in right pane 2...")
+
+This enables precise multi-pane terminal management!
