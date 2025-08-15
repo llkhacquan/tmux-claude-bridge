@@ -448,18 +448,31 @@ class TmuxTerminalMCP {
     }
 
     const paneInfo = status.ctPaneInfo ? 
-      `\n📏 CT Pane: ${status.ctPaneInfo.width}x${status.ctPaneInfo.height} at ${status.ctPaneInfo.path}` : 
-      '\n❌ No Claude Terminal pane configured';
+      `\nCT Pane size: ${status.ctPaneInfo.width}x${status.ctPaneInfo.height} at ${status.ctPaneInfo.path}` : 
+      '\nNo Claude Terminal pane configured';
+
+    // Get recent command history
+    let commandHistory = '';
+    if (status.ctPane) {
+      try {
+        const recentCommands = await this.tmux.getRecentCommands(3);
+        const formattedHistory = this.tmux.formatCommandHistory(recentCommands);
+        commandHistory = `\n\nRecent Commands:\n${formattedHistory}`;
+      } catch (error) {
+        commandHistory = `\n\nRecent Commands: Error retrieving history`;
+      }
+    }
 
     return {
       content: [
         {
           type: 'text',
-          text: `✅ Connected to tmux session: ${status.session}\n` +
-                `🪟 Window: ${status.window} (${status.totalPanes} panes)\n` +
-                `📍 Current pane: ${status.currentPane}\n` +
-                `🎯 Claude Terminal pane: ${status.ctPane || 'none'}` +
-                paneInfo
+          text: `Connected to tmux session: ${status.session}\n` +
+                `Window: ${status.window} (${status.totalPanes} panes)\n` +
+                `Current pane: ${status.currentPane}\n` +
+                `Claude Terminal pane: ${status.ctPane || 'none'}` +
+                paneInfo +
+                commandHistory
         }
       ]
     };

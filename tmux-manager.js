@@ -429,4 +429,127 @@ export class TmuxManager {
     }
   }
 
+  /**
+   * Get recent command history from bash history in the CT Pane
+   */
+  async getRecentCommands(limit = 5, paneIndex = null) {
+    const targetPane = paneIndex || this.ctPane;
+    if (!targetPane) {
+      return 'No Claude Terminal pane available';
+    }
+
+    try {
+      const target = `${this.currentSession}:${this.currentWindow}.${targetPane}`;
+      
+      // Capture recent terminal lines to extract commands and their results
+      const { stdout } = await execAsync(`tmux capture-pane -t ${target} -p -S -50`);
+      const lines = stdout.split('\n').filter(line => line.trim());
+      
+      // Parse commands and their results
+      const commands = this.parseCommandHistory(lines, limit);
+      
+      return commands;
+    } catch (error) {
+      return `Error getting command history: ${error.message}`;
+    }
+  }
+
+  /**
+   * Parse terminal output to extract command history
+   */
+  parseCommandHistory(lines, limit = 5) {
+    const commands = [];
+    let currentCommand = null;
+    
+    // Look for command prompts and their results
+    for (let i = 0; i < lines.length && commands.length < limit; i++) {
+      const line = lines[i].trim();
+      
+      // Skip empty lines
+      if (!line) continue;
+      
+      // Detect command lines - support various shell prompts
+      const isPromptLine = /[➜\$>#%]\s/.test(line);
+      
+      if (isPromptLine && line.length > 10) {
+        // Extract command from different prompt formats
+        let commandMatch;
+        
+        // zsh oh-my-zsh format: "➜  directory git:(branch) ✗ command"
+        commandMatch = line.match(/➜\s+.*?\s+([^➜]+)$/);
+        
+        // Standard bash/zsh: "$ command" or "# command"
+        if (!commandMatch) {
+          commandMatch = line.match(/[\$>#%]\s+(.+)$/);
+        }
+        
+        if (commandMatch) {
+          if (currentCommand) {
+            commands.push(currentCommand);
+          }
+          
+          currentCommand = {
+            command: commandMatch[1].trim(),
+            timestamp: 'recent',
+            output: [],
+            success: null
+          };
+        }
+      } else if (currentCommand && line) {
+        // Collect output lines
+        currentCommand.output.push(line);
+        
+        // Try to determine success/failure from common patterns
+        if (line.includes('command not found') || 
+            line.includes('error') || 
+            line.includes('failed') ||
+            line.includes('Error:')) {
+          currentCommand.success = false;
+        } else if (line.includes('done') || 
+                  line.includes('completed') || 
+                  line.includes('success')) {
+          currentCommand.success = true;
+        }
+      }
+    }
+    
+    // Add the last command if exists
+    if (currentCommand) {
+      commands.push(currentCommand);
+    }
+    
+    return commands.reverse(); // Show most recent first
+  }
+
+  /**
+   * Format command history for display
+   */
+  formatCommandHistory(commands) {
+    if (!commands || commands.length === 0) {
+      return 'No recent commands found';
+    }
+
+    if (typeof commands === 'string') {
+      return commands; // Error message
+    }
+    
+    return commands.map(cmd => {
+      const statusIcon = this.getCommandStatusIcon(cmd);
+      const outputSummary = cmd.output.length > 0 ? 
+        ` (${cmd.output.length} lines output)` : '';
+      
+      return `${statusIcon} ${cmd.command}${outputSummary}`;
+    }).join('\n');
+  }
+
+  /**
+   * Get status icon based on command analysis
+   */
+  getCommandStatusIcon(cmd) {
+    if (cmd.success === false) return '[FAILED]';
+    if (cmd.success === true) return '[SUCCESS]';
+    if (cmd.output.length === 0) return '[RUNNING]'; // Might still be running
+    return '[EXECUTED]'; // Executed but status unclear
+  }
+
 }
